@@ -1,0 +1,12 @@
+{
+  "name": "tracklog-landing",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Tracklog.fm — landing + waitlist",
+  "scripts": {
+    "start": "vercel dev --listen 3000 --yes"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^0.9.4"
+  }
+}

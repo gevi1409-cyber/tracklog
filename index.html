@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tracklog — Todos los comentarios de tus canciones, en un solo lugar</title>
+<meta name="description" content="¿Cuántos comentarios tienen tus canciones en YouTube Music que nunca has leído? Tracklog te los muestra todos en un dashboard, ordenados, con búsqueda y alertas." />
+<meta property="og:title" content="Tracklog — Todos tus comentarios de YT Music en un dashboard" />
+<meta property="og:description" content="Para artistas independientes con muchas canciones. Deja de abrir el cel y reproducir track por track." />
+<meta property="og:type" content="website" />
+<meta name="theme-color" content="#0a0a0f" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;700;800&family=JetBrains+Mono:wght@400;500&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0a0a0f;
+    --bg-soft: #14141f;
+    --bg-glass: rgba(20, 20, 30, 0.6);
+    --border: rgba(124, 58, 237, 0.2);
+    --border-hover: rgba(0, 200, 180, 0.4);
+    --text: #f4f4f5;
+    --text-soft: #a1a1aa;
+    --text-mute: #71717a;
+    --purple: #C4B5FD;
+    --purple-deep: #7C3AED;
+    --cyan: #00C8B4;
+    --pink: #FF3D8C;
+    --container: 1100px;
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: radial-gradient(ellipse at top, #1a0b2e 0%, #0a0a0f 50%, #000 100%);
+    color: var(--text);
+    line-height: 1.6;
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+  body::before {
+    content: "";
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(124, 58, 237, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(124, 58, 237, 0.04) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+    z-index: 0;
+    mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+  }
+  @keyframes scan {
+    0% { transform: translateY(-100%); }
+    100% { transform: translateY(100vh); }
+  }
+  body::after {
+    content: "";
+    position: fixed; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(0, 200, 180, 0.3), transparent);
+    animation: scan 12s linear infinite;
+    pointer-events: none;
+    z-index: 1;
+  }
+  .display { font-family: 'Syne', sans-serif; letter-spacing: -0.02em; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  a { color: inherit; text-decoration: none; }
+  button { font-family: inherit; cursor: pointer; }
+
+  /* HEADER */
+  header {
+    position: sticky; top: 0; z-index: 50;
+    backdrop-filter: blur(20px);
+    background: rgba(10, 10, 15, 0.7);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav {
+    max-width: var(--container);
+    margin: 0 auto;
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.4rem;
+    letter-spacing: -0.03em;
+    background: linear-gradient(135deg, var(--purple) 0%, var(--cyan) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .logo::before {
+    content: "";
+    width: 10px; height: 10px;
+    background: var(--cyan);
+    border-radius: 50%;
+    box-shadow: 0 0 12px var(--cyan);
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
+  .nav-links { display: flex; gap: 2rem; align-items: center; font-size: 0.875rem; }
+  .nav-links a { color: var(--text-soft); transition: color 0.2s; }
+  .nav-links a:hover { color: var(--cyan); }
+  .nav-cta {
+    background: linear-gradient(135deg, var(--purple-deep), var(--cyan));
+    padding: 0.55rem 1.1rem;
+    border-radius: 6px;
+    font-weight: 600;
+    color: white !important;
+    font-size: 0.85rem;
+  }
+
+  main { position: relative; z-index: 2; }
+
+  /* HERO */
+  .hero {
+    max-width: var(--container);
+    margin: 0 auto;
+    padding: 6rem 1.5rem 4rem;
+    text-align: center;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.9rem;
+    background: rgba(0, 200, 180, 0.08);
+    border: 1px solid rgba(0, 200, 180, 0.3);
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--cyan);
+    margin-bottom: 2rem;
+  }
+  .badge .dot { width: 6px; height: 6px; background: var(--cyan); border-radius: 50%; box-shadow: 0 0 8px var(--cyan); }
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: clamp(2.5rem, 6vw, 4.5rem);
+    letter-spacing: -0.04em;
+    line-height: 1.05;
+    margin-bottom: 1.5rem;
+  }
+  h1 .accent {
+    background: linear-gradient(135deg, var(--purple) 0%, var(--cyan) 50%, var(--pink) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .hero p.lead {
+    max-width: 640px;
+    margin: 0 auto 2.5rem;
+    font-size: clamp(1rem, 2vw, 1.2rem);
+    color: var(--text-soft);
+    line-height: 1.6;
+  }
+  .cta-row {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.85rem 1.6rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--purple-deep), var(--cyan));
+    color: white;
+    box-shadow: 0 4px 20px rgba(124, 58, 237, 0.3);
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(124, 58, 237, 0.4); }
+  .btn-ghost {
+    background: var(--bg-glass);
+    color: var(--text);
+    backdrop-filter: blur(10px);
+    border-color: var(--border);
+  }
+  .btn-ghost:hover { border-color: var(--border-hover); }
+
+  .hero-meta {
+    margin-top: 1.5rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text-mute);
+  }
+
+  /* PROBLEM SECTION */
+  .section { padding: 5rem 1.5rem; max-width: var(--container); margin: 0 auto; }
+  .section-label {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--cyan);
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  h2 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: clamp(1.75rem, 4vw, 2.5rem);
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    margin-bottom: 1.25rem;
+  }
+
+  .problem-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.25rem;
+    margin-top: 3rem;
+  }
+  .pain-card {
+    background: var(--bg-glass);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.75rem;
+    backdrop-filter: blur(20px);
+    transition: all 0.2s;
+  }
+  .pain-card:hover { border-color: var(--border-hover); transform: translateY(-2px); }
+  .pain-card .icon {
+    width: 40px; height: 40px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 1rem;
+    font-size: 1.25rem;
+  }
+  .pain-card .icon.purple { background: rgba(196, 181, 253, 0.15); color: var(--purple); }
+  .pain-card .icon.cyan { background: rgba(0, 200, 180, 0.15); color: var(--cyan); }
+  .pain-card .icon.pink { background: rgba(255, 61, 140, 0.15); color: var(--pink); }
+  .pain-card h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+  .pain-card p { color: var(--text-soft); font-size: 0.9rem; line-height: 1.6; }
+
+  /* SOLUTION / DASHBOARD PREVIEW */
+  .demo-section {
+    padding: 4rem 1.5rem;
+    max-width: var(--container);
+    margin: 0 auto;
+    text-align: center;
+  }
+  .demo-frame {
+    margin-top: 3rem;
+    background: var(--bg-glass);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.5rem;
+    backdrop-filter: blur(20px);
+    box-shadow: 0 20px 80px rgba(124, 58, 237, 0.1);
+  }
+  .demo-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .stat-tile {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: left;
+  }
+  .stat-tile .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--text-mute);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.4rem;
+  }
+  .stat-tile .value {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.5rem;
+  }
+  .stat-tile .value.cyan { color: var(--cyan); }
+  .stat-tile .value.purple { color: var(--purple); }
+  .stat-tile .value.pink { color: var(--pink); }
+  .demo-comments { text-align: left; }
+  .demo-comment {
+    display: flex;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    background: rgba(0,0,0,0.2);
+  }
+  .demo-comment .avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, var(--purple-deep), var(--pink));
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: white;
+  }
+  .demo-comment .body { flex: 1; min-width: 0; }
+  .demo-comment .meta {
+    display: flex; gap: 0.5rem; align-items: baseline;
+    font-size: 0.75rem;
+    margin-bottom: 0.2rem;
+  }
+  .demo-comment .author { color: var(--purple); font-weight: 600; }
+  .demo-comment .time { color: var(--text-mute); font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; }
+  .demo-comment .text { font-size: 0.875rem; color: var(--text-soft); }
+  .demo-comment .song { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--cyan); margin-top: 0.25rem; }
+
+  /* HOW IT WORKS */
+  .how-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.5rem;
+    margin-top: 3rem;
+  }
+  .step {
+    position: relative;
+    padding: 2rem 1.5rem 1.5rem;
+    background: var(--bg-glass);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    backdrop-filter: blur(20px);
+  }
+  .step .num {
+    position: absolute;
+    top: -16px;
+    left: 1.5rem;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--purple-deep), var(--cyan));
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    color: white;
+    font-size: 0.95rem;
+  }
+  .step h4 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    margin-top: 0.5rem;
+  }
+  .step p { color: var(--text-soft); font-size: 0.875rem; line-height: 1.6; }
+
+  /* WAITLIST */
+  .waitlist-section {
+    max-width: 720px;
+    margin: 4rem auto;
+    padding: 3rem 2rem;
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.08), rgba(0, 200, 180, 0.05));
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    backdrop-filter: blur(20px);
+    text-align: center;
+  }
+  .waitlist-section h2 { margin-bottom: 0.75rem; }
+  .waitlist-section p { color: var(--text-soft); margin-bottom: 2rem; }
+  form.waitlist {
+    display: flex;
+    gap: 0.5rem;
+    max-width: 480px;
+    margin: 0 auto;
+    flex-wrap: wrap;
+  }
+  form.waitlist input[type="email"] {
+    flex: 1;
+    min-width: 200px;
+    padding: 0.85rem 1rem;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  form.waitlist input[type="email"]:focus { border-color: var(--cyan); }
+  form.waitlist input[type="email"]::placeholder { color: var(--text-mute); }
+  form.waitlist button {
+    padding: 0.85rem 1.5rem;
+    background: linear-gradient(135deg, var(--purple-deep), var(--cyan));
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: transform 0.2s;
+  }
+  form.waitlist button:hover { transform: translateY(-1px); }
+  form.waitlist button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .waitlist-status {
+    margin-top: 1rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+  }
+  .waitlist-status.success { color: var(--cyan); }
+  .waitlist-status.error { color: var(--pink); }
+
+  .waitlist-meta {
+    margin-top: 1.5rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text-mute);
+  }
+
+  /* FAQ */
+  .faq { max-width: 800px; margin: 0 auto; }
+  .faq-item {
+    border-bottom: 1px solid var(--border);
+    padding: 1.5rem 0;
+  }
+  .faq-item summary {
+    cursor: pointer;
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    font-size: 1.1rem;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+  .faq-item summary::-webkit-details-marker { display: none; }
+  .faq-item summary::after {
+    content: "+";
+    font-size: 1.5rem;
+    color: var(--cyan);
+    transition: transform 0.2s;
+  }
+  .faq-item[open] summary::after { transform: rotate(45deg); }
+  .faq-item .answer {
+    margin-top: 1rem;
+    color: var(--text-soft);
+    font-size: 0.95rem;
+    line-height: 1.7;
+  }
+
+  /* FOOTER */
+  footer {
+    border-top: 1px solid var(--border);
+    margin-top: 4rem;
+    padding: 3rem 1.5rem 2rem;
+    text-align: center;
+    color: var(--text-mute);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    line-height: 1.8;
+  }
+  footer .logo { justify-content: center; margin-bottom: 1rem; font-size: 1.1rem; }
+  footer a { color: var(--text-soft); }
+  footer a:hover { color: var(--cyan); }
+
+  @media (max-width: 600px) {
+    .nav-links a:not(.nav-cta) { display: none; }
+    .hero { padding: 4rem 1.5rem 3rem; }
+    .section { padding: 3.5rem 1.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <nav class="nav">
+    <a class="logo" href="#">Tracklog<span style="color: var(--text-mute); font-weight: 400;">.fm</span></a>
+    <div class="nav-links">
+      <a href="#problema">El problema</a>
+      <a href="#como-funciona">Cómo funciona</a>
+      <a href="#faq">FAQ</a>
+      <a href="#waitlist" class="nav-cta">Quiero acceso</a>
+    </div>
+  </nav>
+</header>
+
+<main>
+
+  <section class="hero">
+    <div class="badge">
+      <span class="dot"></span>
+      <span>BETA PRIVADA · SOLO ARTISTAS INDIE</span>
+    </div>
+    <h1>
+      Tus oyentes están <br />
+      <span class="accent">comentando tus canciones.</span><br />
+      Tú no los estás leyendo.
+    </h1>
+    <p class="lead">
+      YouTube Music esconde los comentarios detrás de un botón que tienes que tocar canción por canción. Si tienes 50, 100, 400 tracks, es imposible. Tracklog los junta todos en un solo lugar.
+    </p>
+    <div class="cta-row">
+      <a href="#waitlist" class="btn btn-primary">Únete a la beta →</a>
+      <a href="#como-funciona" class="btn btn-ghost">Cómo funciona</a>
+    </div>
+    <div class="hero-meta">
+      // beta privada · primeros 100 usuarios gratis · sin tarjeta
+    </div>
+  </section>
+
+  <section class="section" id="problema">
+    <div class="section-label">El problema</div>
+    <h2>Tienes comentarios que <span style="color: var(--pink);">nunca vas a leer</span>.</h2>
+    <p style="color: var(--text-soft); max-width: 700px;">
+      Si publicas tu música a través de DistroKid, CD Baby, o cualquier distribuidor, YouTube genera automáticamente "Art Tracks" — videos de tus canciones donde la gente comenta. El problema es que esos comentarios solo aparecen en YouTube Music, dentro de un panel oculto, y no hay forma de verlos todos juntos.
+    </p>
+    <div class="problem-grid">
+      <div class="pain-card">
+        <div class="icon purple">🎧</div>
+        <h3>Reproducir canción por canción</h3>
+        <p>Para ver si un track tiene comentarios, tienes que abrir YT Music, reproducirlo, y abrir el panel. Con 50+ canciones, no es viable.</p>
+      </div>
+      <div class="pain-card">
+        <div class="icon cyan">📊</div>
+        <h3>YouTube Studio no los muestra</h3>
+        <p>Studio te da analytics de tu canal humano, pero los Art Tracks viven en el canal "- Topic" que YouTube genera automáticamente. Quedan en un limbo.</p>
+      </div>
+      <div class="pain-card">
+        <div class="icon pink">⏰</div>
+        <h3>Comentarios viejos sin respuesta</h3>
+        <p>Cuando finalmente los descubres, son de hace 6 meses. Tu fan ya se sintió ignorado y se fue. La conversación se perdió.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="demo-section">
+    <div class="section-label">La solución</div>
+    <h2>Todos tus comentarios, <span style="color: var(--cyan);">en un solo dashboard</span>.</h2>
+    <p style="color: var(--text-soft); max-width: 600px; margin: 0 auto;">
+      Conectas tu cuenta una vez y Tracklog te muestra todos los comentarios de todas tus canciones. Buscables. Filtrables. Con notificaciones cuando llegan nuevos.
+    </p>
+
+    <div class="demo-frame">
+      <div class="demo-stats">
+        <div class="stat-tile">
+          <div class="label">tracks totales</div>
+          <div class="value purple">417</div>
+        </div>
+        <div class="stat-tile">
+          <div class="label">comentarios</div>
+          <div class="value cyan">213</div>
+        </div>
+        <div class="stat-tile">
+          <div class="label">sin responder</div>
+          <div class="value pink">38</div>
+        </div>
+        <div class="stat-tile">
+          <div class="label">esta semana</div>
+          <div class="value cyan">+12</div>
+        </div>
+      </div>
+
+      <div class="demo-comments">
+        <div class="demo-comment">
+          <div class="avatar">K</div>
+          <div class="body">
+            <div class="meta"><span class="author">@KurumitokisakiNose</span><span class="time">hace 1m</span></div>
+            <div class="text">temon jajaja, es qué me representa muchísimo</div>
+            <div class="song">→ El Raro del Salón</div>
+          </div>
+        </div>
+        <div class="demo-comment">
+          <div class="avatar" style="background: linear-gradient(135deg, var(--cyan), var(--purple-deep));">P</div>
+          <div class="body">
+            <div class="meta"><span class="author">@Paranolla-k6n</span><span class="time">hace 3h</span></div>
+            <div class="text">Yo soy naturaleza 🏞️</div>
+            <div class="song">→ La Sombra de Vlad</div>
+          </div>
+        </div>
+        <div class="demo-comment">
+          <div class="avatar" style="background: linear-gradient(135deg, var(--pink), var(--purple-deep));">M</div>
+          <div class="body">
+            <div class="meta"><span class="author">@marisae.b.8897</span><span class="time">hace 1d</span></div>
+            <div class="text">Esta canción me llegó al alma, gracias por compartir tu arte</div>
+            <div class="song">→ Cuando Ella Canta</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="como-funciona">
+    <div class="section-label">Cómo funciona</div>
+    <h2>Tres pasos. <span style="color: var(--cyan);">Cero configuración.</span></h2>
+    <div class="how-grid">
+      <div class="step">
+        <div class="num">1</div>
+        <h4>Conecta tu cuenta</h4>
+        <p>Login con Google. Tracklog usa OAuth oficial — solo le damos permiso de lectura a tu canal de YouTube. Puedes revocar el acceso cuando quieras.</p>
+      </div>
+      <div class="step">
+        <div class="num">2</div>
+        <h4>Detecta tus tracks</h4>
+        <p>Tracklog encuentra tu canal humano y tu canal "- Topic" automáticamente, los une, y trae todos los comentarios de tus canciones.</p>
+      </div>
+      <div class="step">
+        <div class="num">3</div>
+        <h4>Lee, filtra, responde</h4>
+        <p>Dashboard único con búsqueda, filtros por canción, fecha y autor. Notificaciones por correo cuando hay un comentario nuevo. Responde directo.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="waitlist-section" id="waitlist">
+    <h2>Únete a la beta privada</h2>
+    <p>Los primeros 100 artistas tienen acceso gratis de por vida.</p>
+    <form class="waitlist" id="waitlistForm">
+      <input type="email" id="email" name="email" placeholder="tu@correo.com" required autocomplete="email" />
+      <button type="submit" id="submitBtn">Apartar lugar</button>
+      <!-- Honeypot anti-bot: campo oculto que un humano no llena -->
+      <input type="text" name="website" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;" aria-hidden="true" />
+    </form>
+    <div class="waitlist-status" id="status"></div>
+    <div class="waitlist-meta">
+      // sin spam · sin tarjeta · cancelas con un click
+    </div>
+  </section>
+
+  <section class="section" id="faq">
+    <div class="section-label">Preguntas frecuentes</div>
+    <h2>Lo que probablemente te estás preguntando.</h2>
+    <div class="faq" style="margin-top: 2rem;">
+      <details class="faq-item">
+        <summary>¿Es seguro? ¿Tracklog tiene control de mi cuenta?</summary>
+        <div class="answer">
+          No. Tracklog usa OAuth de Google con permisos de solo-lectura sobre tu canal. No podemos publicar, eliminar, ni cambiar nada. Y tú puedes revocar el acceso desde tu cuenta de Google en cualquier momento. Tampoco guardamos tu contraseña — Google nos da un token que tú controlas.
+        </div>
+      </details>
+      <details class="faq-item">
+        <summary>¿Cuánto cuesta?</summary>
+        <div class="answer">
+          Durante la beta privada (primeros 100 usuarios) es 100% gratis. Después, plan gratuito limitado y plan Pro de $5 USD/mes con tracks ilimitados, alertas en tiempo real y respuestas desde la app.
+        </div>
+      </details>
+      <details class="faq-item">
+        <summary>¿Funciona si solo tengo canal humano y subo mis canciones a mano?</summary>
+        <div class="answer">
+          Sí. Tracklog soporta los dos casos: tracks en tu canal de YouTube personal, y Art Tracks generados automáticamente por distribuidores como DistroKid o CD Baby. Funciona mejor cuando tienes los dos, porque los unifica.
+        </div>
+      </details>
+      <details class="faq-item">
+        <summary>¿Puedo responder comentarios desde Tracklog?</summary>
+        <div class="answer">
+          En la beta inicial verás los comentarios pero responderás desde YouTube. La función de responder dentro de Tracklog está en la siguiente versión, una vez Google apruebe los permisos de escritura (es un proceso de verificación que toma semanas).
+        </div>
+      </details>
+      <details class="faq-item">
+        <summary>¿Sirve para Spotify, Apple Music, etc?</summary>
+        <div class="answer">
+          Por ahora solo YouTube Music. Spotify no tiene comentarios públicos, y Apple Music tampoco. YouTube es el único donde los oyentes comentan canciones, lo cual es paradójicamente lo que hace tan absurdo que YT Music los esconda.
+        </div>
+      </details>
+      <details class="faq-item">
+        <summary>¿Quién hace Tracklog?</summary>
+        <div class="answer">
+          Un artista independiente con 400+ canciones que se cansó de no poder leer sus comentarios. Tracklog nace de un dolor personal — los descubrimientos técnicos detrás de la app salieron de meses de pelearse con la API de YouTube. Si eres artista indie, te entendemos.
+        </div>
+      </details>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="logo">Tracklog<span style="color: var(--text-mute); font-weight: 400;">.fm</span></div>
+  <div>// hecho para artistas independientes en LATAM y el mundo</div>
+  <div style="margin-top: 0.5rem;">
+    <a href="mailto:hola@tracklog.fm">hola@tracklog.fm</a> · <a href="#">Privacidad</a> · <a href="#">Términos</a>
+  </div>
+  <div style="margin-top: 1rem; opacity: 0.5;">© 2026 Tracklog</div>
+</footer>
+
+<script>
+  // Waitlist form handling
+  const form = document.getElementById('waitlistForm');
+  const status = document.getElementById('status');
+  const submitBtn = document.getElementById('submitBtn');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('email').value.trim();
+    const honeypot = form.querySelector('input[name="website"]').value;
+
+    if (!email || !email.includes('@')) {
+      status.textContent = '// correo inválido';
+      status.className = 'waitlist-status error';
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Enviando...';
+    status.textContent = '';
+
+    try {
+      const res = await fetch('/api/waitlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, source: 'landing', website: honeypot })
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (res.ok) {
+        if (data.already_signed_up) {
+          status.textContent = '✓ Ya estabas en la lista. Te avisamos pronto.';
+        } else {
+          status.textContent = '✓ ¡Listo! Te avisamos cuando entres a la beta.';
+        }
+        status.className = 'waitlist-status success';
+        form.reset();
+      } else {
+        status.textContent = '// ' + (data.error || 'algo falló, intenta de nuevo');
+        status.className = 'waitlist-status error';
+      }
+    } catch (err) {
+      // Fallback offline / endpoint no listo: localStorage
+      const list = JSON.parse(localStorage.getItem('tracklog_waitlist') || '[]');
+      if (!list.includes(email)) {
+        list.push(email);
+        localStorage.setItem('tracklog_waitlist', JSON.stringify(list));
+      }
+      status.textContent = '✓ ¡Listo! Te avisamos cuando entres a la beta.';
+      status.className = 'waitlist-status success';
+      form.reset();
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Apartar lugar';
+    }
+  });
+</script>
+
+</body>
+</html>

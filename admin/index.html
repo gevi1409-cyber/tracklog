@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tracklog Admin · Waitlist</title>
+<meta name="robots" content="noindex, nofollow" />
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;700;800&family=JetBrains+Mono:wght@400;500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: radial-gradient(ellipse at top, #1a0b2e 0%, #0a0a0f 50%, #000 100%);
+    color: #f4f4f5;
+    min-height: 100vh;
+    padding: 2rem 1.5rem;
+  }
+  .container { max-width: 1100px; margin: 0 auto; }
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.8rem;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #C4B5FD 0%, #00C8B4 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .subtitle { color: #a1a1aa; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; margin-bottom: 2rem; }
+  .auth-box {
+    background: rgba(20, 20, 30, 0.6);
+    border: 1px solid rgba(124, 58, 237, 0.2);
+    backdrop-filter: blur(20px);
+    border-radius: 12px;
+    padding: 2rem;
+    max-width: 480px;
+    margin: 4rem auto;
+  }
+  .auth-box h2 { font-family: 'Syne', sans-serif; margin-bottom: 1rem; }
+  input[type="password"], input[type="text"] {
+    width: 100%;
+    padding: 0.85rem 1rem;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(124, 58, 237, 0.2);
+    border-radius: 8px;
+    color: #f4f4f5;
+    font-family: inherit;
+    font-size: 0.95rem;
+    outline: none;
+    margin-bottom: 1rem;
+  }
+  input:focus { border-color: #00C8B4; }
+  button {
+    padding: 0.85rem 1.5rem;
+    background: linear-gradient(135deg, #7C3AED, #00C8B4);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.95rem;
+  }
+  button:hover { transform: translateY(-1px); }
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  .stat {
+    background: rgba(20, 20, 30, 0.6);
+    border: 1px solid rgba(124, 58, 237, 0.2);
+    backdrop-filter: blur(20px);
+    border-radius: 12px;
+    padding: 1.25rem;
+  }
+  .stat .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: #71717a;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.5rem;
+  }
+  .stat .value {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 2rem;
+    color: #00C8B4;
+  }
+  table {
+    width: 100%;
+    background: rgba(20, 20, 30, 0.6);
+    border: 1px solid rgba(124, 58, 237, 0.2);
+    backdrop-filter: blur(20px);
+    border-radius: 12px;
+    border-collapse: separate;
+    border-spacing: 0;
+    overflow: hidden;
+  }
+  th, td {
+    text-align: left;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    border-bottom: 1px solid rgba(124, 58, 237, 0.15);
+  }
+  th {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: #71717a;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    background: rgba(0,0,0,0.3);
+  }
+  tr:last-child td { border-bottom: none; }
+  td.email { font-weight: 500; color: #C4B5FD; }
+  td.mono { font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: #a1a1aa; }
+  .actions { margin-top: 1.5rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .btn-secondary {
+    background: rgba(20, 20, 30, 0.6);
+    border: 1px solid rgba(124, 58, 237, 0.2);
+    color: #f4f4f5;
+    padding: 0.6rem 1.1rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .btn-secondary:hover { border-color: #00C8B4; }
+  .empty {
+    text-align: center;
+    padding: 3rem;
+    color: #71717a;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .error { color: #FF3D8C; margin-top: 1rem; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; }
+  .repeat-badge {
+    display: inline-block;
+    background: rgba(0, 200, 180, 0.15);
+    color: #00C8B4;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-family: 'JetBrains Mono', monospace;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Tracklog · Admin</h1>
+  <div class="subtitle">// waitlist dashboard</div>
+
+  <div id="authView" class="auth-box">
+    <h2>Acceso</h2>
+    <p style="color: #a1a1aa; font-size: 0.85rem; margin-bottom: 1.5rem;">Pega tu admin token para ver la lista.</p>
+    <input type="password" id="token" placeholder="admin token" autocomplete="off" />
+    <button onclick="login()">Entrar</button>
+    <div id="authError" class="error"></div>
+  </div>
+
+  <div id="dataView" style="display: none;">
+    <div class="stats">
+      <div class="stat">
+        <div class="label">Total</div>
+        <div class="value" id="statTotal">—</div>
+      </div>
+      <div class="stat">
+        <div class="label">Últimas 24h</div>
+        <div class="value" id="stat24">—</div>
+      </div>
+      <div class="stat">
+        <div class="label">Últimos 7d</div>
+        <div class="value" id="stat7d">—</div>
+      </div>
+    </div>
+
+    <table id="dataTable">
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>Origen</th>
+          <th>Fecha</th>
+          <th>Repetidas</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+
+    <div class="actions">
+      <button class="btn-secondary" onclick="copyEmails()">Copiar todos los emails</button>
+      <button class="btn-secondary" onclick="downloadCSV()">Descargar CSV</button>
+      <button class="btn-secondary" onclick="logout()">Salir</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let entries = [];
+
+async function login() {
+  const tok = document.getElementById('token').value.trim();
+  const errorEl = document.getElementById('authError');
+  errorEl.textContent = '';
+  if (!tok) { errorEl.textContent = '// pega tu token'; return; }
+
+  try {
+    const res = await fetch(`/api/admin?token=${encodeURIComponent(tok)}`);
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      errorEl.textContent = '// ' + (data.error || 'no autorizado');
+      return;
+    }
+    const data = await res.json();
+    sessionStorage.setItem('tl_token', tok);
+    render(data);
+  } catch (err) {
+    errorEl.textContent = '// error de red';
+  }
+}
+
+function logout() {
+  sessionStorage.removeItem('tl_token');
+  location.reload();
+}
+
+function render(data) {
+  document.getElementById('authView').style.display = 'none';
+  document.getElementById('dataView').style.display = 'block';
+
+  document.getElementById('statTotal').textContent = data.stats.total;
+  document.getElementById('stat24').textContent = data.stats.last_24h;
+  document.getElementById('stat7d').textContent = data.stats.last_7d;
+
+  entries = data.entries;
+  const tbody = document.getElementById('tbody');
+  if (!entries.length) {
+    tbody.innerHTML = '<tr><td colspan="4" class="empty">// nadie todavía. comparte la landing.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = entries.map(e => `
+    <tr>
+      <td class="email">${escapeHtml(e.email)}</td>
+      <td class="mono">${escapeHtml(e.source || '-')}</td>
+      <td class="mono">${formatDate(e.created_at)}</td>
+      <td>${e.signup_count > 1 ? `<span class="repeat-badge">×${e.signup_count}</span>` : '-'}</td>
+    </tr>
+  `).join('');
+}
+
+function copyEmails() {
+  const list = entries.map(e => e.email).join(', ');
+  navigator.clipboard.writeText(list);
+  alert(`${entries.length} emails copiados al portapapeles`);
+}
+
+function downloadCSV() {
+  const header = 'email,source,created_at,signup_count\n';
+  const rows = entries.map(e =>
+    `${e.email},${e.source || ''},${e.created_at},${e.signup_count}`
+  ).join('\n');
+  const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `tracklog-waitlist-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function escapeHtml(s) {
+  const div = document.createElement('div');
+  div.textContent = s || '';
+  return div.innerHTML;
+}
+
+function formatDate(iso) {
+  const d = new Date(iso);
+  return d.toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' });
+}
+
+// Auto-login si ya tienes el token guardado en la sesión
+const saved = sessionStorage.getItem('tl_token');
+if (saved) {
+  document.getElementById('token').value = saved;
+  login();
+}
+
+// Enter para login
+document.getElementById('token').addEventListener('keydown', e => {
+  if (e.key === 'Enter') login();
+});
+</script>
+
+</body>
+</html>
